@@ -33,11 +33,13 @@ def rsvd_srft(A, k, p=10, q=0):
     # Step 2: multiply A by D
     AD = A * D[np.newaxis, :]
     # Step 3: FFT along columns (F^T)
-    AF = numpy.fft.fft(AD, axis=1)  # shape m x n
+    AF = numpy.fft.fft(AD, axis=1)  # shape m x n (complex)
     # Step 4: Subsample k+p columns
     idx = np.random.choice(n, size=k + p, replace=False)
     Omega = AF[:, idx]  # m x (k+p)
-    # Power iterations (reshape to real if necessary)
+    # Take real part to avoid complex number issues throughout the algorithm
+    Omega = Omega.real
+    # Power iterations
     Y = Omega
     for _ in range(q):
         Y = A @ (A.T @ Y)
@@ -45,4 +47,8 @@ def rsvd_srft(A, k, p=10, q=0):
     B = Q.T @ A
     Ub, S, Vt = svd(B, full_matrices=False)
     U = Q @ Ub
-    return U, S, Vt
+    # Truncate to rank k
+    U_k = U[:, :k]
+    S_k = S[:k]
+    Vt_k = Vt[:k, :]
+    return U_k, S_k, Vt_k
